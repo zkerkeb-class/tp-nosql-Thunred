@@ -5,8 +5,10 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import pokemons from './schemas/pokemons.js';
+import pokemonsRouter from './routes/pokemons.js';
+import authRouter from './routes/auth.js';
 
-import './connect.js'
+import connect from './connect.js'
 
 
 const app = express();
@@ -22,13 +24,21 @@ app.get('/', (req, res) => {
     res.send('Hello, World!');
 });
 
-app.get('/api/pokemons', async (req, res) => {
-    // Ici, vous pouvez récupérer les pokémons depuis la base de données
-    const pokemonsList = await pokemons.find(); // Récupère tous les pokémons de la collection
-    res.json(pokemonsList);
-})
+app.use('/api/pokemons', pokemonsRouter);
+app.use('/api/auth', authRouter);
 
 
-app.listen(process.env.PORT || 3000, () => {
-    console.log(`Server is running on http://localhost:${process.env.PORT || 3000}`);
-});
+const start = async () => {
+    try {
+        await connect();
+        const port = process.env.PORT || 3000;
+        app.listen(port, () => {
+            console.log(`Server is running on http://localhost:${port}`);
+        });
+    } catch (error) {
+        console.error('Failed to start server due to DB connection error.');
+        process.exit(1);
+    }
+};
+
+start();

@@ -1,12 +1,14 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 const connect = async () => {
     try {
-        await mongoose.connect('mongodb://localhost:27017/pokemon-nosql');
+        const uri = process.env.MONGODB_URI;
+        await mongoose.connect(uri);
         console.log('Connected to MongoDB');
     } catch (error) {
         console.error('Error connecting to MongoDB:', error);
+        throw error;
     }
 };
 
-connect();  
+export default connect;

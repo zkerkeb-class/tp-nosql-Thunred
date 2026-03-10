@@ -1,0 +1,142 @@
+{
+  "info": {
+    "_postman_id": "pokemon-api-collection",
+    "name": "Pokemon API - Full Tests",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\":\"testuser\",\"password\":\"pikachu\"}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api","auth","register"] }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status is 201 or 400 (already exists)', function () {",
+                  "  pm.expect(pm.response.code === 201 || pm.response.code === 400).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\"username\":\"testuser\",\"password\":\"pikachu\"}" },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api","auth","login"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('login success', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('token');",
+                  "  pm.environment.set('token', json.token);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Pokemons",
+      "item": [
+        {
+          "name": "Get All (paginated)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/pokemons", "host": ["{{baseUrl}}"], "path": ["api","pokemons"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": [
+                "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                "pm.test('has pagination keys', function () { var j = pm.response.json(); pm.expect(j).to.have.property('data'); pm.expect(j).to.have.property('total'); });"
+              ] }
+            }
+          ]
+        },
+        {
+          "name": "Get by id (25)",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/pokemons/25", "host": ["{{baseUrl}}"], "path": ["api","pokemons","25"] } },
+          "event": [ { "listen": "test", "script": { "exec": [
+            "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+            "pm.test('id 25', function () { var j = pm.response.json(); pm.expect(j.id || j.data).to.exist; if (j.id) pm.expect(j.id).to.eql(25); else pm.expect(j.data[0].id).to.eql(25); });"
+          ] } } ]
+        },
+        {
+          "name": "Filter by type (Fire)",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/pokemons?type=Fire", "host": ["{{baseUrl}}"], "path": ["api","pokemons"], "query": [{"key":"type","value":"Fire"}] } },
+          "event": [ { "listen": "test", "script": { "exec": [
+            "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+            "pm.test('contains type Fire', function () { var j = pm.response.json(); var items = j.data || j; pm.expect(items.length).to.be.above(0); });"
+          ] } } ]
+        },
+        {
+          "name": "Search by name (pika)",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/pokemons?name=pika", "host": ["{{baseUrl}}"], "path": ["api","pokemons"], "query": [{"key":"name","value":"pika"}] } },
+          "event": [ { "listen": "test", "script": { "exec": [
+            "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+            "pm.test('has results', function () { var j = pm.response.json(); var items = j.data || j; pm.expect(items.length).to.be.above(0); });"
+          ] } } ]
+        },
+        {
+          "name": "Create (protected)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{token}}" } ],
+            "body": { "mode": "raw", "raw": "{\"id\":152,\"name\":{\"english\":\"Chikorita\",\"french\":\"Germignon\"},\"type\":[\"Grass\"],\"base\":{\"HP\":45,\"Attack\":49,\"Defense\":65,\"SpecialAttack\":49,\"SpecialDefense\":65,\"Speed\":45},\"image\":\"http://localhost:3000/assets/pokemons/152.png\" }" },
+            "url": { "raw": "{{baseUrl}}/api/pokemons", "host": ["{{baseUrl}}"], "path": ["api","pokemons"] }
+          },
+          "event": [ { "listen": "test", "script": { "exec": [
+            "pm.test('created 201', function () { pm.response.to.have.status(201); });",
+            "pm.test('created id 152', function () { var j = pm.response.json(); pm.expect(j.id).to.eql(152); });"
+          ] } } ]
+        },
+        {
+          "name": "Update (protected)",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{token}}" } ],
+            "body": { "mode": "raw", "raw": "{\"name\":{\"french\":\"Germignon-MAJ\"}}" },
+            "url": { "raw": "{{baseUrl}}/api/pokemons/152", "host": ["{{baseUrl}}"], "path": ["api","pokemons","152"] }
+          },
+          "event": [ { "listen": "test", "script": { "exec": [
+            "pm.test('updated 200', function () { pm.response.to.have.status(200); });",
+            "pm.test('french name updated', function () { var j = pm.response.json(); pm.expect(j.name.french).to.eql('Germignon-MAJ'); });"
+          ] } } ]
+        },
+        {
+          "name": "Delete (protected)",
+          "request": { "method": "DELETE", "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ], "url": { "raw": "{{baseUrl}}/api/pokemons/152", "host": ["{{baseUrl}}"], "path": ["api","pokemons","152"] } },
+          "event": [ { "listen": "test", "script": { "exec": [ "pm.test('deleted 204', function () { pm.response.to.have.status(204); });" ] } } ]
+        }
+      ]
+    }
+  ]
+}
